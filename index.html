@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DefiDaiDao | Premium Interface</title>
+    <style>
+        :root {
+            --binance-yellow: #F3BA2F;
+            --bg-dark: #0B0E11;
+            --card-bg: #1E2329;
+            --text-main: #EAECEF;
+            --text-dim: #848E9C;
+            --border: #474D57;
+        }
+
+        body, html { margin: 0; padding: 0; background: var(--bg-dark); color: var(--text-main); font-family: 'Inter', sans-serif; overflow-x: hidden; }
+
+        #bg-canvas { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+
+        .container {
+            position: relative; z-index: 10; display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100vh; padding: 20px;
+        }
+
+        .card {
+            background: var(--card-bg); border-radius: 32px; width: 100%; max-width: 440px; padding: 2.5rem;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.8); border: 1px solid var(--border); backdrop-filter: blur(10px);
+        }
+
+        h1 { color: var(--binance-yellow); font-size: 2.8rem; font-weight: 900; margin: 0; text-align: center; letter-spacing: -2px; }
+        .subtitle { font-size: 0.7rem; color: var(--text-dim); text-align: center; letter-spacing: 3px; margin-bottom: 25px; text-transform: uppercase;}
+
+        .balance-box { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 25px; }
+        .bal-item { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 16px; border: 1px solid #2B3139; text-align: center; }
+        .bal-v { font-size: 1rem; font-weight: bold; color: #fff; display: block; }
+        .bal-lbl { font-size: 0.55rem; color: var(--text-dim); }
+
+        .btn {
+            width: 100%; border-radius: 18px; border: none; font-weight: 800; cursor: pointer; transition: 0.3s;
+            display: flex; justify-content: center; align-items: center; text-transform: uppercase;
+        }
+
+        .btn-main { background: var(--binance-yellow); color: #000; padding: 20px; font-size: 1.2rem; margin-bottom: 15px; }
+        .btn-connected { background: transparent; color: var(--binance-yellow); padding: 10px; font-size: 0.75rem; border: 1px solid var(--binance-yellow); margin-bottom: 25px; }
+
+        /* اصلاح فاصله بین بخش‌ها */
+        .reg-zone { display: none; margin-top: 10px; border-top: 1px solid #2B3139; padding-top: 20px; }
+        .input-box { background: #000; border: 1px solid var(--border); border-radius: 15px; padding: 18px; margin-bottom: 12px; }
+        input { background: transparent; border: none; color: #fff; width: 100%; outline: none; font-size: 0.9rem; text-align: center; font-family: monospace; }
+
+        /* فاصله بین دکمه‌های داشبورد */
+        .dash-group { display: none; flex-direction: column; gap: 18px; margin-top: 10px; }
+        .btn-dash { background: var(--binance-yellow); color: #000; padding: 20px; font-size: 1.3rem; margin-bottom: 5px; }
+        .btn-stats { background: transparent; border: 2px solid var(--border); color: #fff; padding: 18px; font-size: 1.1rem; }
+
+        #infoPanel { background: rgba(0,0,0,0.5); border-radius: 20px; padding: 20px; margin-top: 20px; display: none; }
+        .stat-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #2B3139; font-size: 0.9rem; }
+
+        /* اصلاح بخش لوگوها */
+        .partners { margin-top: 40px; display: flex; gap: 20px; justify-content: center; align-items: flex-start; flex-wrap: wrap; }
+        .partner-link { text-decoration: none; color: var(--text-dim); display: flex; flex-direction: column; align-items: center; gap: 10px; width: 80px; transition: 0.3s; }
+        .partner-link:hover { color: #fff; transform: translateY(-5px); opacity: 1; }
+        .partner-logo { width: 36px; height: 36px; object-fit: contain; filter: drop-shadow(0 0 5px rgba(255,255,255,0.1)); }
+        .partner-link span { font-size: 0.65rem; text-align: center; font-weight: 600; }
+
+        #congratsModal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.96);
+            display: none; z-index: 100; justify-content: center; align-items: center; text-align: center;
+        }
+        .modal-content { background: var(--card-bg); padding: 3rem; border-radius: 35px; border: 2px solid var(--binance-yellow); max-width: 350px; }
+        
+        #status { font-size: 0.65rem; color: var(--text-dim); margin-top: 25px; text-align: center; letter-spacing: 1px; }
+    </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<div class="container">
+    <div class="card">
+        <h1>DefiDaiDao</h1>
+        <div class="subtitle">Decentralized Protocol</div>
+
+        <div class="balance-box">
+            <div class="bal-item"><span class="bal-v" id="bnbVal">0.000</span><span class="bal-lbl">BNB BALANCE</span></div>
+            <div class="bal-item"><span class="bal-v" id="daiBal">0.00</span><span class="bal-lbl">DAI BALANCE</span></div>
+        </div>
+
+        <button id="connectBtn" class="btn btn-main">Connect Wallet</button>
+
+        <div id="registrationZone" class="reg-zone">
+            <div id="step1">
+                <button id="approveBtn" class="btn btn-main" style="font-size: 1.1rem;">1. Approve DAI</button>
+            </div>
+            <div id="step2" style="display:none;">
+                <div class="input-box"><input type="text" id="uplineInput" placeholder="Sponsor Address"></div>
+                <button id="registerBtn" class="btn btn-main">2. Finalize Registration</button>
+            </div>
+        </div>
+
+        <div class="dash-group" id="mainDashboard">
+            <button id="rewardBtn" class="btn btn-dash">Claim Rewards</button>
+            <button id="infoBtn" class="btn btn-stats">Global Stats</button>
+        </div>
+
+        <div id="infoPanel">
+            <div class="stat-row"><span>Member Global ID:</span><span id="v-id" style="color:var(--binance-yellow)">-</span></div>
+            <div class="stat-row"><span>All Left Members:</span><span id="v-l">0</span></div>
+            <div class="stat-row"><span>All Right Members:</span><span id="v-r">0</span></div>
+            <div class="stat-row"><span>Sync Complete:</span><span id="v-s">NO</span></div>
+        </div>
+
+        <div id="status">SECURE CONNECTION REQUIRED</div>
+    </div>
+
+    <div class="partners">
+        <a href="https://www.binance.com" target="_blank" class="partner-link">
+            <img src="https://cryptologos.cc/logos/binance-coin-bnb-logo.png" class="partner-logo" alt="Binance">
+            <span>Binance</span>
+        </a>
+        <a href="https://makerdao.com" target="_blank" class="partner-link">
+            <img src="https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.png" class="partner-logo" alt="DAI">
+            <span>MakerDAO</span>
+        </a>
+        <a href="https://trustwallet.com" target="_blank" class="partner-link">
+            <img src="https://trustwallet.com/assets/images/media/assets/TWT.png" class="partner-logo" alt="Trust Wallet">
+            <span>Trust Wallet</span>
+        </a>
+        <a href="https://metamask.io" target="_blank" class="partner-link">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" class="partner-logo" alt="MetaMask">
+            <span>MetaMask</span>
+        </a>
+    </div>
+</div>
+
+<div id="congratsModal">
+    <div class="modal-content">
+        <h2 style="color:var(--binance-yellow); font-size: 2.2rem; margin-bottom: 15px;">WELCOME!</h2>
+        <p>Registration Successful. Your account is now active on the blockchain.</p>
+        <button class="btn btn-main" onclick="location.reload()" style="margin-top: 20px;">Open Dashboard</button>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<script>
+    // --- Canvas Particles ---
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    function initParticles() {
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+        particles = [];
+        for(let i=0; i<60; i++) particles.push({ x: Math.random()*canvas.width, y: Math.random()*canvas.height, r: Math.random()*2+0.5, d: Math.random()*0.5+0.2 });
+    }
+    function drawParticles() {
+        ctx.clearRect(0,0,canvas.width, canvas.height);
+        ctx.fillStyle = "#F3BA2F33";
+        particles.forEach(p => {
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2); ctx.fill();
+            p.y -= p.d; if(p.y < -10) p.y = canvas.height + 10;
+        });
+        requestAnimationFrame(drawParticles);
+    }
+    window.addEventListener('resize', initParticles);
+    initParticles(); drawParticles();
+
+    // --- Logic ---
+    const BSC_ID = "0x38";
+    const CONTRACT_ADDRESS = "0x84a47446f7a563Ce899aE991127b20FB8E20cEca";
+    const DAI_ADDRESS = "0x1AF3F329e8BE154074D8769D1FFa4eE058B1DBc3";
+    let signer, mainContract, tokenContract;
+
+    async function checkNetwork() {
+        const cid = await window.ethereum.request({ method: 'eth_chainId' });
+        if(cid !== BSC_ID) {
+            try { await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BSC_ID }] }); }
+            catch (e) { if(e.code === 4902) alert("Please add BSC Network to your wallet"); }
+        }
+    }
+
+    document.getElementById('connectBtn').onclick = async () => {
+        if(!window.ethereum) return alert("Install MetaMask or TrustWallet");
+        await checkNetwork();
+        try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            await provider.send("eth_requestAccounts", []);
+            signer = await provider.getSigner();
+            const addr = await signer.getAddress();
+            
+            tokenContract = new ethers.Contract(DAI_ADDRESS, ["function approve(address s, uint256 a) public returns (bool)", "function balanceOf(address) view returns (uint256)"], signer);
+            mainContract = new ethers.Contract(CONTRACT_ADDRESS, ["function step_2_become_owner(address _target) external", "function reward() external", "function Owner_Info_Global(address _u) external view returns (uint64 ID, uint32 All_Left, uint32 All_Right, uint32 Save, uint32 Left_Remaining, uint32 Right_Remaining, address UpLine_Address, address Left_Child, address Right_Child, bool Sync_Complete)"], signer);
+
+            const info = await mainContract.Owner_Info_Global(addr);
+            
+            document.getElementById('connectBtn').innerText = "ACCOUNT: " + addr.substring(0,6) + "...";
+            document.getElementById('connectBtn').className = "btn btn-connected";
+            document.getElementById('mainDashboard').style.display = "flex";
+
+            if(Number(info.ID) === 0) document.getElementById('registrationZone').style.display = "block";
+            
+            const bnb = await provider.getBalance(addr);
+            document.getElementById('bnbVal').innerText = parseFloat(ethers.formatEther(bnb)).toFixed(3);
+            const dai = await tokenContract.balanceOf(addr);
+            document.getElementById('daiBal').innerText = parseFloat(ethers.formatUnits(dai, 18)).toFixed(2);
+            document.getElementById('status').innerText = "CONNECTED TO BSC MAINNET";
+        } catch (e) {}
+    };
+
+    document.getElementById('approveBtn').onclick = async () => {
+        try {
+            const tx = await tokenContract.approve(CONTRACT_ADDRESS, ethers.parseUnits("1", 18));
+            await tx.wait();
+            document.getElementById('step1').style.display = "none";
+            document.getElementById('step2').style.display = "block";
+        } catch (e) {}
+    };
+
+    document.getElementById('registerBtn').onclick = async () => {
+        const up = document.getElementById('uplineInput').value;
+        try {
+            const tx = await mainContract.step_2_become_owner(up);
+            await tx.wait();
+            document.getElementById('congratsModal').style.display = "flex";
+        } catch (e) {}
+    };
+
+    document.getElementById('rewardBtn').onclick = async () => {
+        try { await (await mainContract.reward()).wait(); alert("Success!"); } catch (e) { alert("No rewards available"); }
+    };
+
+    document.getElementById('infoBtn').onclick = async () => {
+        const addr = await signer.getAddress();
+        const info = await mainContract.Owner_Info_Global(addr);
+        document.getElementById('infoPanel').style.display = "block";
+        document.getElementById('v-id').innerText = info.ID;
+        document.getElementById('v-l').innerText = info.All_Left;
+        document.getElementById('v-r').innerText = info.All_Right;
+        document.getElementById('v-s').innerText = info.Sync_Complete ? "YES" : "NO";
+    };
+</script>
+</body>
+</html>
